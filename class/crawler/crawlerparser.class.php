@@ -143,10 +143,14 @@ class CrawlerParser
     function searchLinks($search_list, $cookie_file, $depth)
     {
         $root = $search_list[0];
+        $links_found = array();
+        $searched_links = array();
+        $forms_found_all = array();
 
         for ($i = 0; $i < $depth; $i++) {
             if (count($search_list) > 0) {
                 while (list($key, $val) = each($search_list)) {
+                    echo $val;
                     $ch = curl_init($val);
                     curl_setopt($ch, CURLOPT_HEADER, 0);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -175,8 +179,7 @@ class CrawlerParser
             }
         }
 
-        $result = array("links" => $searched_links, "form" => $forms_found_all,"cookie"=>$cookie_file);
-        var_dump($result);
+        $result = array("links" => $searched_links, "form" => $forms_found_all,"cookie" => $cookie_file);
         return $result;
     }
 
@@ -284,5 +287,31 @@ class CrawlerParser
         $text = preg_replace($search, $replace, $document);
 
         return $text;
+    }
+
+    function expandLinks($links, $URI)
+    {
+
+        $match_part = CrawlerParser::splitURL($URI);
+        $match_root =
+            $match_part["protocol"].$match_part["host"];
+
+        $search = array("|^http://" . preg_quote($match_part) . "|i",
+            "|^(\/)|i",
+            "|^(?!http://)(?!mailto:)|i",
+            "|/\./|",
+            "|/[^\/]+/\.\./|"
+        );
+
+        $replace = array("",
+            $match_root . "/",
+            $match . "/",
+            "/",
+            "/"
+        );
+
+        $expandedLinks = preg_replace($search, $replace, $links);
+
+        return $expandedLinks;
     }
 }

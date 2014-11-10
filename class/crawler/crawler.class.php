@@ -19,7 +19,7 @@ class Crawler
     public $version = "0.1";
 
     //root url to be crawled
-    private $root_url = "";
+    private $root_url = array();
 
     /**
      * @return string
@@ -129,13 +129,13 @@ class Crawler
         // Parser-class
         if (!class_exists("CrawlerParser"))
         {
-            include_once($classpath."/crawlerparser.php");
+            include_once($classpath."/crawlerparser.class.php");
         }
 
         // report-class
         if (!class_exists("CrawlerReport"))
         {
-            include_once($classpath."/crawlerreport.php");
+            include_once($classpath."/crawlerreport.class.php");
 
             // Initiate a new PageReport
             //$this->pageReport = new CrawlerReport();
@@ -145,9 +145,7 @@ class Crawler
     //crawler main function
     function startCrawl()
     {
-        // Init, split given URL into host, port, path and file a.s.o.
-        $url_parts = CrawlerParser::splitURL($this->getRootUrl());
-        $search_list[] = $this->getRootUrl();
+        $search_list = $this->getRootUrl();
         $cookie_file = "";
 
         //if needed login
@@ -156,7 +154,7 @@ class Crawler
             //visual login && get cookie
             $cookie_file = CrawlerParser::visualLogin($this->getRootUrl(),$this->getLoginData())["cookie"];
         }
-        $result = CrawlerParser::searchLinks($this->getRootUrl(),$cookie_file,$this->getCrawlerDepth());
+        $result = CrawlerParser::searchLinks($search_list,$cookie_file,$this->getCrawlerDepth());
         return $result;
     }
 }
