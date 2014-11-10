@@ -12,14 +12,14 @@ $crawler->setCrawlerDepth(2);
 $result = $crawler->startCrawl();
 //var_dump($result);
 
-foreach($result["form"] as $formdata)
-{
-    if($formdata!="")
-    {
-        $xss = new PHPAttackBoard();
-        $xssres = $xss->XSS_Attack_Form($crawler->getRootUrl(),$formdata,$result["cookie"]);
-        var_dump($xssres);
-        $sqlres = $xss->Sql_Inject_Attack_Form($crawler->getRootUrl(),$formdata,$result["cookie"]);
-        var_dump($sqlres);
-    }
-}
+//foreach($result["form"] as $formdata)
+//{
+//    if($formdata!="")
+//    {
+//        $xss = new PHPAttackBoard();
+//        $xssres = $xss->XSS_Attack_Form($crawler->getRootUrl(),$formdata,$result["cookie"]);
+//        var_dump($xssres);
+//        $sqlres = $xss->Sql_Inject_Attack_Form($crawler->getRootUrl(),$formdata,$result["cookie"]);
+//        var_dump($sqlres);
+//    }
+//}
