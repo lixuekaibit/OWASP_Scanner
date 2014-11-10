@@ -1,7 +1,7 @@
 <?php
 /////////////////////////////////////////////////////////
-// PHPCrawl
-// - class crawler:
+// PHPCrawlParser
+// - class CrawlerParser:
 //
 // The main-class, version 0.1,
 // 2014/01/15
@@ -13,6 +13,7 @@
 // Free Software Foundation; either version 2 of the License, or
 // at your option) any later version.
 /////////////////////////////////////////////////////////
+include "crawlerfilter.class.php";
 class CrawlerParser
 {
     //the fetch results temp storage
@@ -140,7 +141,7 @@ class CrawlerParser
     }
 
     //the function to find links in page
-    function searchLinks($search_list, $cookie_file, $depth)
+    function searchLinks($search_list, $cookie_file, $depth,$filter)
     {
         $root = $search_list[0];
         $links_found = array();
@@ -150,7 +151,6 @@ class CrawlerParser
         for ($i = 0; $i < $depth; $i++) {
             if (count($search_list) > 0) {
                 while (list($key, $val) = each($search_list)) {
-                    echo $val;
                     $ch = curl_init($val);
                     curl_setopt($ch, CURLOPT_HEADER, 0);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -159,7 +159,7 @@ class CrawlerParser
                     }
                     $contents = curl_exec($ch);
                     curl_close($ch);
-                    $links_found = CrawlerParser::expandLinks(CrawlerParser::fetchLinks($contents), $root);
+                    $links_found = CrawlerParser::expandLinks(CrawlerParser::fetchLinks($contents,$filter), $root);
                     //CrawlerParser::ptest($links_found);
                     $forms_found = CrawlerParser::fetchForms($contents);
                     $forms_found_all[] = $forms_found;
@@ -192,25 +192,29 @@ class CrawlerParser
     }
 
     //find links from page
-    function fetchLinks($source)
+    function fetchLinks($source,$filter)
     {
-        preg_match_all("'<\s*a\s.*?href\s*=\s*			# find <a href=
-						([\"\'])?					# find single or double quote
-						(?(1) (.*?)\\1 | ([^\s\>]+))		# if quote found, match up to next matching
-													# quote, otherwise match up to next space
-						'isx", $source, $links);
-
+        $match = array();
+        $match_part="href|src|url|location|codebase|background|data|profile|open";
+        preg_match_all("/<[ ]{0,}a[ \n\r][^<>]{0,}(?<= |\n|\r)"
+                        ."(?:".$match_part.")[ \n\r]{0,}=[ \n\r]"
+                        ."{0,}[\"|']{0,1}([^\"'>< ]{0,})[^<>]{0,}"
+                        .">((?:(?!<[ \n\r]*\/a[ \n\r]*>).)*)<[ \n\r]*\/a[ \n\r]*>/ is", $source, $links);
 
         // catenate the non-empty matches from the conditional subpattern
 
-        while (list($key, $val) = each($links[2])) {
+        while (list($key, $val) = each($links[1])) {
             if (!empty($val))
-                $match[] = $val;
-        }
-
-        while (list($key, $val) = each($links[3])) {
-            if (!empty($val))
-                $match[] = $val;
+            {
+                if(count($filter)>0)
+                {
+                    foreach($filter as $flr){
+                        if(CrawlerFilter::$flr($val)){
+                            $match[] = $val;
+                        }
+                    }
+                }
+            }
         }
 
         // return the links
@@ -291,12 +295,15 @@ class CrawlerParser
 
     function expandLinks($links, $URI)
     {
+        preg_match("/^[^\?]+/", $URI, $match);
 
+        $match = preg_replace("|/[^\/\.]+\.[^\/\.]+$|", "", $match[0]);
+        $match = preg_replace("|/$|", "", $match);
         $match_part = CrawlerParser::splitURL($URI);
         $match_root =
-            $match_part["protocol"].$match_part["host"];
+            $match_part["protocol"] . $match_part["host"];
 
-        $search = array("|^http://" . preg_quote($match_part) . "|i",
+        $search = array("|^http://" . preg_quote($match_part["host"]) . "|i",
             "|^(\/)|i",
             "|^(?!http://)(?!mailto:)|i",
             "|/\./|",

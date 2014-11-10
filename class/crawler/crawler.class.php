@@ -56,22 +56,22 @@ class Crawler
         $this->crawler_depth = $crawler_depth;
     }
 
-    private $not_fetch_match = array();
+    private $fetch_filter = array();
 
     /**
      * @return array
      */
-    public function getNotFetchMatch()
+    public function getFetchFilter()
     {
-        return $this->not_fetch_match;
+        return $this->fetch_filter;
     }
 
     /**
-     * @param array $not_fetch_match
+     * @param array $fetch_filter
      */
-    public function setNotFetchMatch($not_fetch_match)
+    public function setFetchFilter($fetch_filter)
     {
-        $this->not_fetch_match = $not_fetch_match;
+        $this->fetch_filter = $fetch_filter;
     }
 
     //if needed visual login,set this
@@ -154,7 +154,7 @@ class Crawler
             //visual login && get cookie
             $cookie_file = CrawlerParser::visualLogin($this->getRootUrl(),$this->getLoginData())["cookie"];
         }
-        $result = CrawlerParser::searchLinks($search_list,$cookie_file,$this->getCrawlerDepth());
+        $result = CrawlerParser::searchLinks($search_list,$cookie_file,$this->getCrawlerDepth(),$this->getFetchFilter());
         return $result;
     }
 }
