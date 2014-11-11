@@ -75,7 +75,7 @@ class Crawler
     }
 
     //if needed visual login,set this
-    private $login_data = array("name"=>"","passwd"=>"","origURL"=>"","domain"=>"");
+    private $login_data = "";
 
     /**
      * @return array
@@ -149,10 +149,10 @@ class Crawler
         $cookie_file = "";
 
         //if needed login
-        if(count(array_filter($this->getLoginData()))>0)
+        if($this->getLoginData() != "")
         {
             //visual login && get cookie
-            $cookie_file = CrawlerParser::visualLogin($this->getRootUrl(),$this->getLoginData())["cookie"];
+            $cookie_file = CrawlerParser::visualLogin($this->getRootUrl()[0],$this->getLoginData())["cookie"];
         }
         $result = CrawlerParser::searchLinks($search_list,$cookie_file,$this->getCrawlerDepth(),$this->getFetchFilter());
         return $result;

@@ -2,11 +2,12 @@
 include "../crawler/crawler.class.php";
 include "../crawler/crawlerparser.class.php";
 include "../attackscan/attackutil.class.php";
+include "../attackscan/attackboard.class.php";
 $crawler = new Crawler();
 
-//$crawler->setLoginData("LoginForm[username]=demo&LoginForm[password]=demo&LoginForm[rememberMe]=0&yt0=login");
+$crawler->setLoginData("LoginForm[username]=demo&LoginForm[password]=demo&LoginForm[rememberMe]=0&yt0=login");
 
-$rooturl = array(0 => "http://www.baidu.com");
+$rooturl = array(0 => "localhost/~lixuekaibit/YiiTest/index.php");
 $crawler->setRootUrl($rooturl);
 
 $filter = array("attack_filter");
@@ -15,6 +16,7 @@ $crawler->setFetchFilter($filter);
 $crawler->setCrawlerDepth(2);
 
 $result = $crawler->startCrawl();
+//var_dump($result);
 
 //foreach($result["form"] as $formdata)
 //{
@@ -28,17 +30,17 @@ $result = $crawler->startCrawl();
 //    }
 //}
 
-$attackutil = new AttackUtil();
+//$attackutil = new AttackUtil();
+//
+//$links_parser = $attackutil->parserLinks($result["links"]);
+//$links_rebuild = $attackutil->rebuildLinks($links_parser,"111");
+//var_dump($links_rebuild);
+//
+//$form_parser = $attackutil->parserForm($result["form"]);
+//$form_rebuild = $attackutil->rebuildForm($form_parser,"111");
+//var_dump($form_rebuild);
 
-$links_parser = $attackutil->parserLinks($result["links"]);
-$links_rebuild = $attackutil->rebuildLinks($links_parser,"111");
-var_dump($links_rebuild);
-
-$form_parser = $attackutil->parserForm($result["form"]);
-$form_rebuild = $attackutil->rebuildForm($form_parser,"111");
-var_dump($form_rebuild);
-
-unlink("../crawler/".$result["cookie"]);
+//unlink("../crawler/".$result["cookie"]);
 
 
 

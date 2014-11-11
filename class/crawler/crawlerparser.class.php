@@ -12,7 +12,7 @@
 // under the terms of the GNU General Public License as published by the
 // Free Software Foundation; either version 2 of the License, or
 // at your option) any later version.
-/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////s
 include "crawlerfilter.class.php";
 class CrawlerParser
 {
@@ -147,6 +147,7 @@ class CrawlerParser
         $links_found = array();
         $searched_links = array();
         $forms_found_all = array();
+        $result_search_links = array();
 
         for ($i = 0; $i < $depth; $i++) {
             if (count($search_list) > 0) {
@@ -159,27 +160,44 @@ class CrawlerParser
                     }
                     $contents = curl_exec($ch);
                     curl_close($ch);
-                    $links_found = CrawlerParser::expandLinks(CrawlerParser::fetchLinks($contents,$filter), $root);
+                    $links_found = CrawlerParser::fetchLinks($contents,$filter,$val);
                     //CrawlerParser::ptest($links_found);
                     $forms_found = CrawlerParser::fetchForms($contents);
-                    $forms_found_all[] = $forms_found;
-                    $text_found = CrawlerParser::fetchForms($contents);
-                    //var_dump($text_found);
+                    if(!empty($forms_found))
+                    {
+                        $forms_found_all[$val] = $forms_found;
+                    }
+                    //$text_found = CrawlerParser::fetchForms($contents,$val);
+                       //var_dump($text_found);
                 }
-            }
+                unset($search_list);
+                if (count($links_found) > 0) {
+                    foreach ($links_found as $value) {
+                        if (!in_array($value, $searched_links)) {
+                            $searched_links[] = $value;
+                            $search_list[] = $value;
+                        }
+                    }
+                }
 
-            unset($search_list);
-            if (count($links_found) > 0) {
-                foreach ($links_found as $value) {
-                    if (!in_array($value, $searched_links)) {
-                        $searched_links[] = $value;
-                        $search_list[] = $value;
+                foreach($filter as $filter_fun)
+                {
+                    foreach($searched_links as $res_link)
+                    {
+                        if(CrawlerFilter::$filter_fun($res_link))
+                        {
+                            $result_search_links["quota"][] = $res_link;
+                        }
+                        else
+                        {
+                            $result_search_links["path"][] = $res_link;
+                        }
                     }
                 }
             }
         }
 
-        $result = array("links" => $searched_links, "form" => $forms_found_all,"cookie" => $cookie_file);
+        $result = array("uri" => $root,"links" => $result_search_links, "form" => $forms_found_all,"cookie" => $cookie_file);
         return $result;
     }
 
@@ -192,7 +210,7 @@ class CrawlerParser
     }
 
     //find links from page
-    function fetchLinks($source,$filter)
+    function fetchLinks($source,$filter,$uri)
     {
         $match = array();
         $match_part="href|src|url|location|codebase|background|data|profile|open";
@@ -206,14 +224,7 @@ class CrawlerParser
         while (list($key, $val) = each($links[1])) {
             if (!empty($val))
             {
-                if(count($filter)>0)
-                {
-                    foreach($filter as $flr){
-                        if(CrawlerFilter::$flr($val)){
-                            $match[] = $val;
-                        }
-                    }
-                }
+                $match[] = CrawlerParser::expandLinks($val,$uri);
             }
         }
 
@@ -224,10 +235,13 @@ class CrawlerParser
     //find forms from page
     function fetchForms($source)
     {
+        $match = array();
         preg_match_all("'<\/?(FORM|INPUT|SELECT|TEXTAREA|(OPTION))[^<>]*>(?(2)(.*(?=<\/?(option|select)[^<>]*>[\r\n]*)|(?=[\r\n]*))|(?=[\r\n]*))'Usi", $source, $elements);
         // catenate the matches
-        $match = implode("\r\n", $elements[0]);
-
+        //var_dump($elements);
+        if(!empty($elements[0])) {
+            $match[] = implode("\r\n", $elements[0]);
+        }
         // return the links
         return $match;
     }
@@ -301,7 +315,7 @@ class CrawlerParser
         $match = preg_replace("|/$|", "", $match);
         $match_part = CrawlerParser::splitURL($URI);
         $match_root =
-            $match_part["protocol"] . $match_part["host"];
+            $match_part["protocol"] . $match_part["host"].$match_part["path"];
 
         $search = array("|^http://" . preg_quote($match_part["host"]) . "|i",
             "|^(\/)|i",
@@ -318,7 +332,6 @@ class CrawlerParser
         );
 
         $expandedLinks = preg_replace($search, $replace, $links);
-
         return $expandedLinks;
     }
 }

@@ -19,20 +19,21 @@ class AttackUtil
     private $mime_boundary = ""; // MIME boundary for multipart/form-data submit type
 
     //the util function to parser form data for the post data use
-    function parserForm($forms)
+    function parserForm($forms,$uri)
     {
         //the storage link for the filter
         $result_forms = array();
         if(count($forms)>0)
         {
-            foreach($forms as $form_data)
+            foreach($forms as $key => $form_data)
             {
-                preg_match("/<form\s+[^>]*?action\s*=\s*(\'|\")(.*?)\\1[^>]*?\/?\s*>/i", $form_data, $link);
+                //var_dump($form_data);
+                preg_match("/<form\s+[^>]*?action\s*=\s*(\'|\")(.*?)\\1[^>]*?\/?\s*>/i", $form_data[0], $link);
                 if(!empty($link))
                 {
-                    $base_url = $link[2];
+                    $base_url = CrawlerParser::expandLinks($link[2],$key);
                 }
-                preg_match_all("/<input\s+[^>]*?name\s*=\s*(\'|\")(.*?)\\1[^>]*?\/?\s*>/i", $form_data, $names);
+                preg_match_all("/<input\s+[^>]*?name\s*=\s*(\'|\")(.*?)\\1[^>]*?\/?\s*>/i", $form_data[0], $names);
                 foreach($names[2] as $name)
                 {
                     $result_forms[$base_url][$name] = "";
@@ -136,8 +137,11 @@ class AttackUtil
                 {
                     foreach($sub_strs as $val)
                     {
-                        list($key,$var) = explode("=",$val);
-                        $result_links[$root_url][$key] = $var;
+                        if(strpos($val,"=")>0)
+                        {
+                            list($key,$var) = explode("=",$val);
+                            $result_links[$root_url][$key] = $var;
+                        }
                     }
                 }
             }
@@ -165,6 +169,31 @@ class AttackUtil
             }
         }
         return $result_urls;
+    }
+
+    //this function is to simulate the http request
+    function simulate_http($url,$cookie_file,$post_data)
+    {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 200);
+        curl_setopt($ch, CURLOPT_HEADER, 1);
+        if($post_data != "")
+        {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+        }
+        if($cookie_file != "")
+        {
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+        }
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.9) Gecko/20071025 Firefox/2.0.0.9; Mozilla Firefox');
+        $pg = curl_exec($ch);
+        curl_close($ch);
+        if($pg){
+            return $pg;
+        } else {
+            return false;
+        }
     }
 
 }
